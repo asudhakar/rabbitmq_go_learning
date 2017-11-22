@@ -64,7 +64,7 @@ func main() {
 			for d := range msgs {
 				log.Printf("Received a message: %s", d.Body)
 				_, err = db.Exec("INSERT INTO messages (text) VALUES ($1)", d.Body)
-				failOnError(err, "Failed to insert a consumer")
+				failOnError(err, "Failed to insert a data")
 			}
 		}()
 
