@@ -1,12 +1,14 @@
 package main
 
 import (
-	"fmt"
 	"database/sql"
+	"fmt"
 	"log"
-	"github.com/streadway/amqp"
+
 	_ "github.com/lib/pq"
+	"github.com/streadway/amqp"
 )
+
 var db *sql.DB
 
 func init() {
@@ -21,7 +23,6 @@ func init() {
 	}
 	fmt.Println("You connected to your database.")
 }
-
 
 func failOnError(err error, msg string) {
 	if err != nil {
@@ -51,7 +52,7 @@ func main() {
 	msgs, err := ch.Consume(
 		q.Name, // queue
 		"",     // consumer
-		true,   // auto-ack
+		false,  // auto-ack
 		false,  // exclusive
 		false,  // no-local
 		false,  // no-wait
@@ -60,14 +61,16 @@ func main() {
 	failOnError(err, "Failed to register a consumer")
 
 	forever := make(chan bool)
-		go func() {
-			for d := range msgs {
-				log.Printf("Received a message: %s", d.Body)
-				_, err = db.Exec("INSERT INTO messages (text) VALUES ($1)", d.Body)
-				failOnError(err, "Failed to insert a data")
-			}
-		}()
+	go func() {
+		for d := range msgs {
+			log.Printf("Received a message: %s", d.Body)
+			_, err = db.Exec("INSERT INTO messages (text) VALUES ($1)", d.Body)
+			failOnError(err, "Failed to insert a data")
+			d.Ack(true)
 
-		log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+		}
+	}()
+
+	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
 	<-forever
 }
